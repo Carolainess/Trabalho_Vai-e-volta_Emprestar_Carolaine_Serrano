@@ -1,0 +1,78 @@
+@model ObjetoFormViewModel
+@{
+    var editando = Model.Id > 0;
+    ViewData["Title"] = editando ? "Editar objeto" : "Anunciar objeto";
+}
+<div class="topo-pagina">
+    <div class="container">
+        <a class="text-suave small fw-semibold" asp-action="@(editando ? "Detalhes" : "Meus")" asp-route-id="@(editando ? Model.Id : null)">
+            <i class="bi bi-arrow-left me-1"></i>Voltar
+        </a>
+        <h1 class="mt-2 mb-1">@(editando ? "Editar objeto" : "Anunciar um objeto")</h1>
+        <p class="text-suave mb-0">@(editando ? "Atualize as informações do seu anúncio." : "Conte o que você pode emprestar. Uma boa foto ajuda muito!")</p>
+    </div>
+</div>
+
+<div class="container py-5">
+    <form asp-action="@(editando ? "Editar" : "Criar")" asp-route-id="@(editando ? Model.Id : null)" method="post" enctype="multipart/form-data" novalidate>
+        <input type="hidden" asp-for="Id" />
+        <div class="row g-4">
+            <div class="col-lg-5">
+                <div class="painel h-100">
+                    <label asp-for="Foto" class="form-label"></label>
+                    <label class="upload" for="Foto">
+                        <img id="previa" src="@Model.FotoAtual" class="@(Model.FotoAtual is null ? "d-none" : "") mb-2" alt="Prévia da foto" />
+                        <div data-sem-foto class="@(Model.FotoAtual is null ? "" : "d-none") py-4">
+                            <i class="bi bi-camera fs-1 text-laranja"></i>
+                            <p class="fw-semibold text-primary mb-1 mt-2">Clique para escolher uma foto</p>
+                        </div>
+                        <p class="small text-suave mb-0">JPG, PNG ou WEBP · até 5 MB @(editando ? "· deixe em branco para manter a atual" : "")</p>
+                    </label>
+                    <input asp-for="Foto" type="file" accept="image/jpeg,image/png,image/webp" class="d-none" data-preview="#previa" />
+                    <span asp-validation-for="Foto" class="text-danger d-block mt-2"></span>
+                </div>
+            </div>
+            <div class="col-lg-7">
+                <div class="painel">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
+                    <div class="mb-3">
+                        <label asp-for="Nome" class="form-label"></label>
+                        <input asp-for="Nome" class="form-control" placeholder="Ex.: Calculadora científica Casio" />
+                        <span asp-validation-for="Nome" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Categoria" class="form-label"></label>
+                        <select asp-for="Categoria" asp-items="Html.GetEnumSelectList<Categoria>()" class="form-select">
+                            <option value="">Escolha uma categoria</option>
+                        </select>
+                        <span asp-validation-for="Categoria" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Descricao" class="form-label"></label>
+                        <textarea asp-for="Descricao" class="form-control" rows="5" placeholder="Estado de conservação, o que acompanha, cuidados…"></textarea>
+                        <span asp-validation-for="Descricao" class="text-danger"></span>
+                    </div>
+                    <div class="mb-4">
+                        @if (Model.Emprestado)
+                        {
+                            <div class="alert alert-info small mb-0"><i class="bi bi-info-circle me-1"></i>Este objeto está emprestado. Ele volta a ficar disponível quando você confirmar a devolução.</div>
+                        }
+                        else
+                        {
+                            <div class="form-check form-switch">
+                                <input asp-for="Disponivel" class="form-check-input" role="switch" />
+                                <label asp-for="Disponivel" class="form-check-label fw-semibold"></label>
+                            </div>
+                            <p class="small text-suave mb-0 mt-1">Desligue se quiser pausar o anúncio por um tempo.</p>
+                        }
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-laranja btn-lg"><i class="bi bi-check2 me-1"></i>@(editando ? "Salvar alterações" : "Publicar anúncio")</button>
+                        <a class="btn btn-contorno btn-lg" asp-action="Meus">Cancelar</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

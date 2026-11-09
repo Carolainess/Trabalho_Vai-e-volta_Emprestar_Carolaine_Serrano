@@ -1,0 +1,102 @@
+@{
+    ViewData["Title"] = "API REST";
+    var endpoints = new (string Metodo, string Rota, string Descricao, bool Login, string? Corpo)[]
+    {
+        ("GET", "/api/objetos", "Lista os objetos. Filtros: ?busca=livro&categoria=Livros&disponiveis=true", false, null),
+        ("GET", "/api/objetos/1", "Mostra um objeto pelo id", false, null),
+        ("POST", "/api/objetos", "Cadastra um objeto", true, "{\n  \"nome\": \"Régua T de desenho técnico\",\n  \"descricao\": \"Régua T de 80 cm, ótima para Desenho Técnico.\",\n  \"categoria\": \"MaterialDeEstudo\",\n  \"disponivel\": true\n}"),
+        ("PUT", "/api/objetos/1", "Atualiza um objeto (dono ou admin)", true, "{\n  \"nome\": \"Calculadora científica Casio fx-82\",\n  \"descricao\": \"Agora com pilha nova!\",\n  \"categoria\": \"MaterialDeEstudo\",\n  \"disponivel\": true\n}"),
+        ("DELETE", "/api/objetos/1", "Exclui um objeto (dono ou admin)", true, null),
+        ("GET", "/api/emprestimos", "Empréstimos em que você participa (admin vê todos). Filtro: ?status=Emprestado", true, null),
+        ("GET", "/api/emprestimos/1", "Mostra um empréstimo", true, null),
+        ("POST", "/api/emprestimos", "Solicita um empréstimo", true, "{\n  \"objetoId\": 4,\n  \"dataPrevistaDevolucao\": \"" + DateTime.Now.AddDays(5).ToString("yyyy-MM-dd") + "\",\n  \"mensagem\": \"Pedido feito pela API!\"\n}"),
+        ("PUT", "/api/emprestimos/2/aprovar", "Aprova o pedido (dono ou admin) e marca o objeto como emprestado", true, null),
+        ("PUT", "/api/emprestimos/2/recusar", "Recusa o pedido (dono ou admin)", true, null),
+        ("PUT", "/api/emprestimos/1/devolver", "Confirma a devolução e o objeto volta a ficar disponível", true, null),
+        ("DELETE", "/api/emprestimos/2", "Cancela um pedido que ainda está aguardando (quem pediu)", true, null),
+        ("POST", "/api/auth/login", "Faz login e recebe o cookie de sessão", false, "{\n  \"email\": \"carol@vaievolta.com\",\n  \"senha\": \"Senha@123\"\n}"),
+        ("GET", "/api/auth/eu", "Mostra quem está logado", true, null),
+    };
+}
+<div class="topo-pagina">
+    <div class="container">
+        <span class="etiqueta" style="background:var(--laranja-clara);color:var(--laranja-escura)"><i class="bi bi-braces"></i> Conceito 1 · API REST</span>
+        <h1 class="mt-2 mb-1">API REST do VAI E VOLTA</h1>
+        <p class="text-suave mb-0" style="max-width:720px">
+            Os mesmos dados do site também estão disponíveis em JSON para outros programas (um app de celular, por exemplo).
+            Cada recurso tem uma URL e o verbo HTTP diz a ação: <strong>GET</strong> consulta, <strong>POST</strong> cria,
+            <strong>PUT</strong> atualiza e <strong>DELETE</strong> remove.
+        </p>
+    </div>
+</div>
+
+<div class="container py-5">
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <h2 class="h5 mb-3">Endpoints</h2>
+            <div class="d-grid gap-2">
+                @foreach (var e in endpoints)
+                {
+                    <button type="button" class="endpoint text-start" data-metodo="@e.Metodo" data-rota="@e.Rota" data-corpo="@e.Corpo">
+                        <span class="metodo @e.Metodo.ToLower()">@e.Metodo</span>
+                        <div class="flex-fill">
+                            <code>@e.Rota</code>
+                            <div class="small text-suave">@e.Descricao</div>
+                        </div>
+                        @if (e.Login) { <i class="bi bi-lock text-suave" title="Precisa de login"></i> }
+                    </button>
+                }
+            </div>
+            <p class="small text-suave mt-3"><i class="bi bi-lock me-1"></i>Precisa estar logado (a API usa o mesmo login do site).</p>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="painel position-sticky" style="top:90px">
+                <h2 class="h5 mb-3"><i class="bi bi-terminal me-2 text-laranja"></i>Testar agora</h2>
+                <div class="d-flex gap-2 mb-2">
+                    <select id="metodo" class="form-select" style="max-width:120px">
+                        <option>GET</option><option>POST</option><option>PUT</option><option>DELETE</option>
+                    </select>
+                    <input id="rota" class="form-control" value="/api/objetos" />
+                </div>
+                <textarea id="corpo" class="form-control font-monospace small mb-2" rows="6" placeholder="Corpo JSON (para POST e PUT)"></textarea>
+                <button id="enviar" class="btn btn-laranja w-100 mb-3"><i class="bi bi-send me-1"></i>Enviar requisição</button>
+                <div class="d-flex justify-content-between small mb-1">
+                    <span class="text-suave">Resposta</span>
+                    <strong id="status" class="text-primary"></strong>
+                </div>
+                <pre id="resposta" class="resposta-api mb-0">Clique em um endpoint à esquerda ou escreva o seu e envie.</pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const $ = id => document.getElementById(id);
+        document.querySelectorAll('.endpoint').forEach(b => b.addEventListener('click', () => {
+            $('metodo').value = b.dataset.metodo;
+            $('rota').value = b.dataset.rota;
+            $('corpo').value = b.dataset.corpo || '';
+            if (b.dataset.metodo === 'GET') enviar();
+        }));
+
+        async function enviar() {
+            const metodo = $('metodo').value;
+            const opcoes = { method: metodo, headers: { 'Content-Type': 'application/json' } };
+            if ((metodo === 'POST' || metodo === 'PUT') && $('corpo').value.trim()) opcoes.body = $('corpo').value;
+            $('resposta').textContent = 'Enviando...';
+            try {
+                const r = await fetch($('rota').value, opcoes);
+                const texto = await r.text();
+                $('status').textContent = `${r.status} ${r.statusText}`;
+                $('status').style.color = r.ok ? 'var(--laranja-escura)' : 'var(--vermelho)';
+                try { $('resposta').textContent = JSON.stringify(JSON.parse(texto), null, 2); }
+                catch { $('resposta').textContent = texto || '(sem conteúdo)'; }
+            } catch (e) {
+                $('resposta').textContent = 'Erro: ' + e.message;
+            }
+        }
+        $('enviar').addEventListener('click', enviar);
+    </script>
+}

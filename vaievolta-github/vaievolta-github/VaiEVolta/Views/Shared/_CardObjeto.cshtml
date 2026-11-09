@@ -1,0 +1,17 @@
+@model (Objeto Objeto, string Situacao)
+@{ var o = Model.Objeto; }
+<a class="card-objeto" asp-controller="Objetos" asp-action="Detalhes" asp-route-id="@o.Id">
+    <div class="foto">
+        <img src="@(o.FotoUrl ?? "/img/sem-foto.svg")" alt="@o.Nome" loading="lazy" data-fallback />
+        <span class="selo @Extensoes.ClasseSituacao(Model.Situacao)">@Model.Situacao</span>
+    </div>
+    <div class="corpo">
+        <span class="categoria"><i class="bi @o.Categoria.Icone() me-1"></i>@o.Categoria.Nome()</span>
+        <h3>@o.Nome</h3>
+        <div class="dono">
+            <span class="avatar laranja">@o.Dono?.Iniciais</span>
+            <span>@o.Dono?.Nome</span>
+            <span class="ms-auto small">@o.CriadoEm.Tempo()</span>
+        </div>
+    </div>
+</a>

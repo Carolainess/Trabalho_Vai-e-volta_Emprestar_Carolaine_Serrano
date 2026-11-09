@@ -1,0 +1,54 @@
+@model (Emprestimo E, bool SouDono)
+@{
+    var e = Model.E;
+    var outra = Model.SouDono ? e.Solicitante : e.Objeto?.Dono;
+}
+<div class="item-emprestimo revelar">
+    <a asp-controller="Objetos" asp-action="Detalhes" asp-route-id="@e.ObjetoId">
+        <img class="miniatura" src="@(e.Objeto?.FotoUrl ?? "/img/sem-foto.svg")" alt="@e.Objeto?.Nome" data-fallback />
+    </a>
+    <div>
+        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+            <h4><a asp-controller="Objetos" asp-action="Detalhes" asp-route-id="@e.ObjetoId" class="text-primary">@e.Objeto?.Nome</a></h4>
+            <span class="selo @e.Status.Classe()">@e.Status.Nome()</span>
+            @if (e.Atrasado) { <span class="selo selo-recusado">Atrasado</span> }
+        </div>
+        <div class="meta">
+            <span><i class="bi bi-person me-1"></i>@(Model.SouDono ? "Pedido por" : "Dono:") <strong>@outra?.Nome</strong></span>
+            <span><i class="bi bi-clock me-1"></i>@e.DataSolicitacao.Tempo()</span>
+            <span><i class="bi bi-calendar-check me-1"></i>Devolução até @e.DataPrevistaDevolucao.DataBr()</span>
+            @if (e.DataDevolucao is DateTime dev) { <span><i class="bi bi-check2-all me-1"></i>Devolvido em @dev.DataBr()</span> }
+            @if (e.Status == StatusEmprestimo.Emprestado && !string.IsNullOrWhiteSpace(outra?.Telefone))
+            {
+                <span><i class="bi bi-whatsapp me-1"></i>@outra.Telefone</span>
+            }
+        </div>
+        @if (!string.IsNullOrWhiteSpace(e.Mensagem))
+        {
+            <div class="mensagem">“@e.Mensagem”</div>
+        }
+    </div>
+    <div class="acoes">
+        @if (Model.SouDono && e.Status == StatusEmprestimo.AguardandoAprovacao)
+        {
+            <form asp-action="Aprovar" asp-route-id="@e.Id" method="post">
+                <button class="btn btn-laranja btn-sm"><i class="bi bi-check-lg me-1"></i>Aprovar</button>
+            </form>
+            <form asp-action="Recusar" asp-route-id="@e.Id" method="post" data-confirmar="Recusar este pedido?">
+                <button class="btn btn-contorno btn-sm">Recusar</button>
+            </form>
+        }
+        else if (Model.SouDono && e.Status == StatusEmprestimo.Emprestado)
+        {
+            <form asp-action="Devolver" asp-route-id="@e.Id" method="post" data-confirmar="Confirmar que você recebeu o objeto de volta?">
+                <button class="btn btn-marinho btn-sm"><i class="bi bi-box-arrow-in-down me-1"></i>Recebi de volta</button>
+            </form>
+        }
+        else if (!Model.SouDono && e.Status == StatusEmprestimo.AguardandoAprovacao)
+        {
+            <form asp-action="Cancelar" asp-route-id="@e.Id" method="post" data-confirmar="Cancelar sua solicitação?">
+                <button class="btn btn-contorno btn-sm">Cancelar pedido</button>
+            </form>
+        }
+    </div>
+</div>

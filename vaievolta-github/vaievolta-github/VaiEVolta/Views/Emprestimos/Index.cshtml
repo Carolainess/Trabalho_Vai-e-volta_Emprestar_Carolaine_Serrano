@@ -1,0 +1,69 @@
+@model PainelEmprestimosViewModel
+@{
+    ViewData["Title"] = "Empréstimos";
+    var pendentes = Model.Recebidos.Count(e => e.Status == StatusEmprestimo.AguardandoAprovacao);
+    var comigo = Model.Feitos.Count(e => e.Status == StatusEmprestimo.Emprestado);
+}
+<div class="topo-pagina">
+    <div class="container">
+        <h1 class="mb-1">Empréstimos</h1>
+        <p class="text-suave mb-4">Acompanhe os pedidos que você recebeu e os que você fez.</p>
+        <div class="abas" role="tablist">
+            <button class="ativo" data-aba="recebidos">Recebidos @if (pendentes > 0) { <span class="contador">@pendentes</span> }</button>
+            <button data-aba="feitos">Meus pedidos @if (comigo > 0) { <span class="contador" style="background:var(--marinho)">@comigo</span> }</button>
+        </div>
+    </div>
+</div>
+
+<div class="container py-5">
+    <section id="aba-recebidos">
+        @if (Model.Recebidos.Count == 0)
+        {
+            <div class="vazio">
+                <div class="icone"><i class="bi bi-inbox"></i></div>
+                <h3 class="h4">Nenhum pedido recebido ainda</h3>
+                <p class="text-suave">Quando alguém pedir um objeto seu, o pedido aparece aqui.</p>
+                <a class="btn btn-laranja" asp-controller="Objetos" asp-action="Criar">Anunciar um objeto</a>
+            </div>
+        }
+        <div class="d-grid gap-3">
+            @foreach (var e in Model.Recebidos)
+            {
+                <partial name="_ItemEmprestimo" model="(e, true)" />
+            }
+        </div>
+    </section>
+
+    <section id="aba-feitos" hidden>
+        @if (Model.Feitos.Count == 0)
+        {
+            <div class="vazio">
+                <div class="icone"><i class="bi bi-send"></i></div>
+                <h3 class="h4">Você ainda não pediu nada emprestado</h3>
+                <p class="text-suave">Dê uma olhada no catálogo, alguém pode ter o que você precisa.</p>
+                <a class="btn btn-laranja" asp-controller="Objetos" asp-action="Index">Ver objetos</a>
+            </div>
+        }
+        <div class="d-grid gap-3">
+            @foreach (var e in Model.Feitos)
+            {
+                <partial name="_ItemEmprestimo" model="(e, false)" />
+            }
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    <script>
+        const botoes = document.querySelectorAll('.abas button');
+        function abrir(nome) {
+            botoes.forEach(b => b.classList.toggle('ativo', b.dataset.aba === nome));
+            document.getElementById('aba-recebidos').hidden = nome !== 'recebidos';
+            document.getElementById('aba-feitos').hidden = nome !== 'feitos';
+            document.querySelectorAll('#aba-' + nome + ' .revelar').forEach(el => el.classList.add('visivel'));
+            history.replaceState(null, '', '#' + nome);
+        }
+        botoes.forEach(b => b.addEventListener('click', () => abrir(b.dataset.aba)));
+        if (location.hash === '#feitos') abrir('feitos');
+    </script>
+}

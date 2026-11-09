@@ -1,0 +1,81 @@
+@model CatalogoViewModel
+@{ ViewData["Title"] = "Objetos"; }
+
+<div class="topo-pagina">
+    <div class="container">
+        <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+            <div>
+                <h1 class="mb-1">Objetos para emprestar</h1>
+                <p class="text-suave mb-0">Encontre o que você precisa entre os itens dos colegas.</p>
+            </div>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <a class="btn btn-laranja" asp-action="Criar"><i class="bi bi-plus-lg me-1"></i> Anunciar objeto</a>
+            }
+        </div>
+
+        <form method="get" asp-action="Index" id="filtros" class="row g-3 align-items-center">
+            @if (Model.Categoria.HasValue)
+            {
+                <input type="hidden" name="categoria" value="@Model.Categoria" />
+            }
+            <div class="col-lg-7">
+                <div class="busca">
+                    <i class="bi bi-search"></i>
+                    <input type="search" name="busca" value="@Model.Busca" class="form-control" placeholder="Pesquisar pelo nome… ex.: calculadora, livro, jaleco" />
+                </div>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-marinho">Pesquisar</button>
+            </div>
+            <div class="col-auto">
+                <div class="form-check form-switch m-0">
+                    <input class="form-check-input" type="checkbox" role="switch" id="disponiveis" name="disponiveis" value="true"
+                           @(Model.SoDisponiveis ? "checked" : "") onchange="this.form.submit()" />
+                    <label class="form-check-label fw-semibold" for="disponiveis">Só disponíveis</label>
+                </div>
+            </div>
+        </form>
+
+        <div class="chips mt-4">
+            <a class="chip @(Model.Categoria is null ? "ativo" : "")"
+               asp-action="Index" asp-route-busca="@Model.Busca" asp-route-disponiveis="@(Model.SoDisponiveis ? "true" : null)">
+                <i class="bi bi-grid"></i> Todas
+            </a>
+            @foreach (var c in Enum.GetValues<Categoria>())
+            {
+                <a class="chip @(Model.Categoria == c ? "ativo" : "")"
+                   asp-action="Index" asp-route-categoria="@c" asp-route-busca="@Model.Busca" asp-route-disponiveis="@(Model.SoDisponiveis ? "true" : null)">
+                    <i class="bi @c.Icone()"></i> @c.Nome()
+                </a>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="container py-5">
+    <p class="text-suave mb-4">
+        <strong class="text-primary">@Model.Objetos.Count</strong> @(Model.Objetos.Count == 1 ? "objeto encontrado" : "objetos encontrados")
+        @if (!string.IsNullOrWhiteSpace(Model.Busca)) { <span>para "<strong>@Model.Busca</strong>"</span> }
+        @if (Model.Categoria.HasValue) { <span>em <strong>@Model.Categoria.Value.Nome()</strong></span> }
+    </p>
+
+    @if (Model.Objetos.Count == 0)
+    {
+        <div class="vazio">
+            <div class="icone"><i class="bi bi-search"></i></div>
+            <h3 class="h4">Nada encontrado</h3>
+            <p class="text-suave">Tente outra palavra ou outra categoria.</p>
+            <a class="btn btn-contorno" asp-action="Index">Limpar filtros</a>
+        </div>
+    }
+
+    <div class="row g-4">
+        @foreach (var o in Model.Objetos)
+        {
+            <div class="col-sm-6 col-lg-4 col-xl-3 revelar">
+                <partial name="_CardObjeto" model='(o, Model.Situacoes.GetValueOrDefault(o.Id, "Disponível"))' />
+            </div>
+        }
+    </div>
+</div>

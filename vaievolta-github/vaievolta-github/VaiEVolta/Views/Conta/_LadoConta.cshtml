@@ -1,0 +1,16 @@
+@model string
+<div class="lado">
+    <a class="logo claro" asp-controller="Home" asp-action="Index">
+        <span class="logo-icone"><i class="bi bi-arrow-left-right"></i></span>
+        <span>VAI <b>E</b> VOLTA</span>
+    </a>
+    <div style="position:relative;z-index:1">
+        <h2 class="mb-3">@Model</h2>
+        <p class="fs-5">Compartilhe o que você tem. Encontre o que precisa.</p>
+        <div class="d-flex gap-3 mt-4">
+            <div class="d-flex align-items-center gap-2"><i class="bi bi-shield-check text-laranja fs-4"></i><span>Só estudantes</span></div>
+            <div class="d-flex align-items-center gap-2"><i class="bi bi-heart text-laranja fs-4"></i><span>Sem custo</span></div>
+        </div>
+    </div>
+    <p class="small mb-0" style="position:relative;z-index:1">Projeto acadêmico · FEMA</p>
+</div>

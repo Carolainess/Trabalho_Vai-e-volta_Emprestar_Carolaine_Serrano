@@ -1,0 +1,55 @@
+@model PerfilViewModel
+@{ ViewData["Title"] = "Meu perfil"; }
+<div class="topo-pagina">
+    <div class="container d-flex align-items-center gap-4 flex-wrap">
+        <span class="avatar grande">@User.FindFirst("Iniciais")?.Value</span>
+        <div>
+            <h1 class="mb-1">@Model.Nome</h1>
+            <div class="text-suave">
+                <i class="bi bi-envelope me-1"></i>@Model.Email
+                <span class="mx-2">·</span>
+                <span class="selo @(Model.Admin ? "selo-emprestado" : "selo-disponivel")">@(Model.Admin ? "Administrador" : "Estudante")</span>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container py-5">
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="d-grid gap-3">
+                <div class="kpi"><div class="ic" style="background:var(--laranja-clara);color:var(--laranja-escura)"><i class="bi bi-box-seam"></i></div><div><strong>@Model.TotalObjetos</strong><span>objetos anunciados</span></div></div>
+                <div class="kpi"><div class="ic" style="background:var(--marinho-claro);color:var(--marinho)"><i class="bi bi-hand-thumbs-up"></i></div><div><strong>@Model.TotalEmprestados</strong><span>vezes que você emprestou</span></div></div>
+                <div class="kpi"><div class="ic" style="background:#fff4de;color:#b5730f"><i class="bi bi-send"></i></div><div><strong>@Model.TotalPedidos</strong><span>pedidos que você fez</span></div></div>
+                <p class="text-suave small mb-0"><i class="bi bi-calendar3 me-1"></i>Membro desde @Model.MembroDesde.DataBr()</p>
+            </div>
+        </div>
+        <div class="col-lg-8">
+            <div class="painel">
+                <h2 class="h5 mb-4">Editar informações</h2>
+                <form asp-action="Perfil" method="post" novalidate>
+                    <div class="mb-3">
+                        <label asp-for="Nome" class="form-label"></label>
+                        <input asp-for="Nome" class="form-control" />
+                        <span asp-validation-for="Nome" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">E-mail</label>
+                        <input class="form-control" value="@Model.Email" disabled />
+                    </div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-sm-7">
+                            <label asp-for="Curso" class="form-label"></label>
+                            <input asp-for="Curso" class="form-control" />
+                        </div>
+                        <div class="col-sm-5">
+                            <label asp-for="Telefone" class="form-label"></label>
+                            <input asp-for="Telefone" class="form-control" />
+                        </div>
+                    </div>
+                    <button class="btn btn-marinho"><i class="bi bi-check2 me-1"></i> Salvar alterações</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

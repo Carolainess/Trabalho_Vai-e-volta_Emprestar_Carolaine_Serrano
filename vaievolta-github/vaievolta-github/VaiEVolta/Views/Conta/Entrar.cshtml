@@ -1,0 +1,46 @@
+@model LoginViewModel
+@{ ViewData["Title"] = "Entrar"; ViewData["SemRodape"] = true; }
+<div class="tela-conta">
+    <partial name="_LadoConta" model="@("Que bom te ver de novo!")" />
+    <div class="formulario">
+        <div class="caixa">
+            <h1 class="h2 mb-1">Entrar</h1>
+            <p class="text-suave mb-4">Ainda não tem conta? <a class="fw-bold text-laranja" asp-action="Cadastro">Cadastre-se</a></p>
+
+            <form asp-action="Entrar" method="post" novalidate>
+                <input type="hidden" asp-for="ReturnUrl" />
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
+                <div class="mb-3">
+                    <label asp-for="Email" class="form-label"></label>
+                    <input asp-for="Email" class="form-control" placeholder="voce@email.com" autocomplete="email" autofocus />
+                    <span asp-validation-for="Email" class="text-danger"></span>
+                </div>
+                <div class="mb-4">
+                    <label asp-for="Senha" class="form-label"></label>
+                    <input asp-for="Senha" class="form-control" placeholder="Sua senha" autocomplete="current-password" />
+                    <span asp-validation-for="Senha" class="text-danger"></span>
+                </div>
+                <button class="btn btn-marinho btn-lg w-100">Entrar <i class="bi bi-arrow-right ms-1"></i></button>
+            </form>
+
+            <div class="demo-contas mt-4">
+                <div class="fw-bold text-primary mb-1"><i class="bi bi-info-circle me-1"></i>Contas de demonstração</div>
+                <div class="text-suave mb-2">Clique para preencher:</div>
+                <button type="button" data-email="carol@vaievolta.com" data-senha="Senha@123">Carol</button>
+                <button type="button" data-email="ana@vaievolta.com" data-senha="Senha@123">Ana</button>
+                <button type="button" data-email="lucas@vaievolta.com" data-senha="Senha@123">Lucas</button>
+                <button type="button" data-email="admin@vaievolta.com" data-senha="Admin@123">Administrador</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.querySelectorAll('.demo-contas button').forEach(b => b.addEventListener('click', () => {
+            document.getElementById('Email').value = b.dataset.email;
+            document.getElementById('Senha').value = b.dataset.senha;
+        }));
+    </script>
+}

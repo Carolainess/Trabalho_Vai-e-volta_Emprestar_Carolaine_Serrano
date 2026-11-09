@@ -1,0 +1,42 @@
+@model List<Objeto>
+@{
+    ViewData["Title"] = "Meus objetos";
+    var situacoes = (Dictionary<int, string>)ViewBag.Situacoes;
+}
+<div class="topo-pagina">
+    <div class="container d-flex flex-wrap justify-content-between align-items-end gap-3">
+        <div>
+            <h1 class="mb-1">Meus objetos</h1>
+            <p class="text-suave mb-0">Tudo o que você anunciou para emprestar.</p>
+        </div>
+        <a class="btn btn-laranja" asp-action="Criar"><i class="bi bi-plus-lg me-1"></i> Anunciar objeto</a>
+    </div>
+</div>
+<div class="container py-5">
+    @if (Model.Count == 0)
+    {
+        <div class="vazio">
+            <div class="icone"><i class="bi bi-box-seam"></i></div>
+            <h3 class="h4">Você ainda não anunciou nada</h3>
+            <p class="text-suave">Que tal começar por aquele livro do semestre passado?</p>
+            <a class="btn btn-laranja" asp-action="Criar"><i class="bi bi-plus-lg me-1"></i> Anunciar meu primeiro objeto</a>
+        </div>
+    }
+    <div class="row g-4">
+        @foreach (var o in Model)
+        {
+            var situacao = situacoes.GetValueOrDefault(o.Id, "Disponível");
+            <div class="col-sm-6 col-lg-4 col-xl-3 revelar">
+                <div class="d-flex flex-column h-100 gap-2">
+                    <partial name="_CardObjeto" model="(o, situacao)" />
+                    <div class="d-flex gap-2">
+                        <a class="btn btn-contorno btn-sm flex-fill" asp-action="Editar" asp-route-id="@o.Id"><i class="bi bi-pencil me-1"></i>Editar</a>
+                        <form asp-action="Excluir" asp-route-id="@o.Id" method="post" class="flex-fill" data-confirmar="Excluir &quot;@o.Nome&quot;? Essa ação não pode ser desfeita.">
+                            <button class="btn btn-perigo-suave btn-sm w-100" disabled="@(situacao == "Emprestado")"><i class="bi bi-trash me-1"></i>Excluir</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,80 @@
+@model AdminViewModel
+@{ ViewData["Title"] = "Administração"; }
+<div class="topo-pagina">
+    <div class="container">
+        <span class="etiqueta" style="background:var(--marinho-claro);color:var(--marinho)"><i class="bi bi-shield-check"></i> Área do administrador</span>
+        <h1 class="mt-2 mb-1">Visão geral da plataforma</h1>
+        <p class="text-suave mb-0">Acompanhe usuários, objetos e empréstimos. O administrador também pode editar ou excluir qualquer objeto e aprovar pedidos.</p>
+    </div>
+</div>
+<div class="container py-5">
+    <div class="row g-3 mb-5">
+        <div class="col-6 col-lg"><div class="kpi"><div class="ic" style="background:var(--marinho-claro);color:var(--marinho)"><i class="bi bi-people"></i></div><div><strong>@Model.TotalUsuarios</strong><span>usuários</span></div></div></div>
+        <div class="col-6 col-lg"><div class="kpi"><div class="ic" style="background:var(--laranja-clara);color:var(--laranja-escura)"><i class="bi bi-box-seam"></i></div><div><strong>@Model.TotalObjetos</strong><span>objetos</span></div></div></div>
+        <div class="col-6 col-lg"><div class="kpi"><div class="ic" style="background:#fff4de;color:#b5730f"><i class="bi bi-hourglass-split"></i></div><div><strong>@Model.Aguardando</strong><span>aguardando</span></div></div></div>
+        <div class="col-6 col-lg"><div class="kpi"><div class="ic" style="background:var(--marinho-claro);color:var(--marinho)"><i class="bi bi-arrow-left-right"></i></div><div><strong>@Model.Emprestados</strong><span>emprestados</span></div></div></div>
+        <div class="col-12 col-lg"><div class="kpi"><div class="ic" style="background:#e8f5e9;color:#2e7d32"><i class="bi bi-check2-all"></i></div><div><strong>@Model.Devolvidos</strong><span>devolvidos</span></div></div></div>
+    </div>
+
+    <h2 class="h4 mb-3">Empréstimos recentes</h2>
+    <div class="tabela table-responsive mb-5">
+        <table class="table">
+            <thead><tr><th>Objeto</th><th>Dono</th><th>Solicitante</th><th>Pedido em</th><th>Devolução</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var e in Model.Emprestimos)
+                {
+                    <tr>
+                        <td><a class="fw-semibold" asp-controller="Objetos" asp-action="Detalhes" asp-route-id="@e.ObjetoId">@e.Objeto?.Nome</a></td>
+                        <td>@e.Objeto?.Dono?.Nome</td>
+                        <td>@e.Solicitante?.Nome</td>
+                        <td class="text-suave">@e.DataSolicitacao.DataBr()</td>
+                        <td class="text-suave">@e.DataPrevistaDevolucao.DataBr()</td>
+                        <td><span class="selo @e.Status.Classe()">@e.Status.Nome()</span></td>
+                        <td class="text-end">
+                            @if (e.Status == StatusEmprestimo.AguardandoAprovacao)
+                            {
+                                <form asp-controller="Emprestimos" asp-action="Aprovar" asp-route-id="@e.Id" asp-route-voltar="/Admin" method="post" class="d-inline">
+                                    <button class="btn btn-laranja btn-sm">Aprovar</button>
+                                </form>
+                            }
+                            else if (e.Status == StatusEmprestimo.Emprestado)
+                            {
+                                <form asp-controller="Emprestimos" asp-action="Devolver" asp-route-id="@e.Id" asp-route-voltar="/Admin" method="post" class="d-inline" data-confirmar="Marcar como devolvido?">
+                                    <button class="btn btn-contorno btn-sm">Marcar devolvido</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <h2 class="h4 mb-3">Usuários</h2>
+    <div class="tabela table-responsive">
+        <table class="table">
+            <thead><tr><th>Nome</th><th>E-mail</th><th>Curso</th><th>Objetos</th><th>Perfil</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var u in Model.Usuarios)
+                {
+                    var admin = u.Perfil == Perfil.Administrador;
+                    <tr>
+                        <td><div class="d-flex align-items-center gap-2"><span class="avatar @(admin ? "" : "laranja")" style="width:30px;height:30px;font-size:.7rem">@u.Iniciais</span><span class="fw-semibold">@u.Nome</span></div></td>
+                        <td class="text-suave">@u.Email</td>
+                        <td class="text-suave">@u.Curso</td>
+                        <td>@Model.ObjetosPorUsuario.GetValueOrDefault(u.Id)</td>
+                        <td><span class="selo @(admin ? "selo-emprestado" : "selo-disponivel")">@u.Perfil.Nome()</span></td>
+                        <td class="text-end">
+                            @if (u.Id != User.Id())
+                            {
+                                <form asp-action="AlterarPerfil" asp-route-id="@u.Id" method="post" class="d-inline" data-confirmar="Alterar o perfil de @u.Nome?">
+                                    <button class="btn btn-contorno btn-sm">@(admin ? "Tornar usuário" : "Tornar admin")</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

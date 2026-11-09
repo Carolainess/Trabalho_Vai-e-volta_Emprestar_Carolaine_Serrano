@@ -1,0 +1,160 @@
+@model DetalhesViewModel
+@{
+    var o = Model.Objeto;
+    ViewData["Title"] = o.Nome;
+    var logado = User.Identity?.IsAuthenticated == true;
+    var souDono = logado && o.DonoId == User.Id();
+    var podeGerenciar = souDono || User.EhAdmin();
+    var voltar = Url.Action("Detalhes", new { id = o.Id });
+    var hoje = DateTime.Now.ToString("yyyy-MM-dd");
+}
+
+<div class="container py-5">
+    <a class="text-suave small fw-semibold" asp-action="Index"><i class="bi bi-arrow-left me-1"></i>Voltar ao catálogo</a>
+
+    <div class="row g-4 g-lg-5 mt-1">
+        <div class="col-lg-6">
+            <div class="foto-detalhe">
+                <img src="@(o.FotoUrl ?? "/img/sem-foto.svg")" alt="@o.Nome" data-fallback />
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+                <span class="categoria text-laranja fw-bold small text-uppercase"><i class="bi @o.Categoria.Icone() me-1"></i>@o.Categoria.Nome()</span>
+                <span class="selo @Extensoes.ClasseSituacao(Model.Situacao)">@Model.Situacao</span>
+            </div>
+            <h1 class="mb-3">@o.Nome</h1>
+            <p class="fs-6 text-suave" style="white-space:pre-line">@o.Descricao</p>
+
+            <div class="painel my-4 py-2">
+                <div class="info-linha">
+                    <span class="avatar laranja">@o.Dono?.Iniciais</span>
+                    <div>
+                        <div class="fw-bold text-primary">@o.Dono?.Nome</div>
+                        <div class="small text-suave">@(o.Dono?.Curso ?? "Estudante")</div>
+                    </div>
+                    @if (logado && !souDono && !string.IsNullOrWhiteSpace(o.Dono?.Telefone))
+                    {
+                        <span class="ms-auto small text-suave"><i class="bi bi-whatsapp text-laranja me-1"></i>@o.Dono.Telefone</span>
+                    }
+                </div>
+                <div class="info-linha">
+                    <span class="ic"><i class="bi bi-calendar3"></i></span>
+                    <span>Anunciado em <strong>@o.CriadoEm.DataBr()</strong></span>
+                </div>
+                <div class="info-linha">
+                    <span class="ic"><i class="bi bi-arrow-repeat"></i></span>
+                    <span>Já foi emprestado <strong>@Model.VezesEmprestado @(Model.VezesEmprestado == 1 ? "vez" : "vezes")</strong></span>
+                </div>
+            </div>
+
+            @* ----------- Área de ação, muda conforme quem está vendo ----------- *@
+            @if (!logado)
+            {
+                <div class="painel painel-destaque text-center">
+                    <h2 class="h5">Gostou? Peça emprestado!</h2>
+                    <p class="text-suave">Entre na sua conta para enviar uma solicitação ao dono.</p>
+                    <a class="btn btn-marinho" asp-controller="Conta" asp-action="Entrar" asp-route-returnUrl="@voltar">Entrar para solicitar</a>
+                </div>
+            }
+            else if (podeGerenciar)
+            {
+                <div class="d-flex gap-2 mb-4">
+                    <a class="btn btn-contorno" asp-action="Editar" asp-route-id="@o.Id"><i class="bi bi-pencil me-1"></i>Editar</a>
+                    <form asp-action="Excluir" asp-route-id="@o.Id" method="post" data-confirmar="Excluir este objeto? Essa ação não pode ser desfeita.">
+                        <button class="btn btn-perigo-suave" disabled="@(Model.Situacao == "Emprestado")"><i class="bi bi-trash me-1"></i>Excluir</button>
+                    </form>
+                </div>
+
+                <h2 class="h5 mb-3">@(souDono ? "Pedidos para este objeto" : "Pedidos (visão do administrador)")</h2>
+                @if (Model.Pedidos.Count == 0)
+                {
+                    <p class="text-suave">Nenhum pedido em aberto no momento.</p>
+                }
+                <div class="d-grid gap-3">
+                    @foreach (var p in Model.Pedidos)
+                    {
+                        <div class="painel py-3">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <span class="avatar">@p.Solicitante?.Iniciais</span>
+                                <div>
+                                    <div class="fw-bold text-primary">@p.Solicitante?.Nome</div>
+                                    <div class="small text-suave">Pediu @p.DataSolicitacao.Tempo() · devolve até @p.DataPrevistaDevolucao.DataBr()</div>
+                                </div>
+                                <span class="selo @p.Status.Classe() ms-auto">@p.Status.Nome()</span>
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(p.Mensagem))
+                            {
+                                <div class="mensagem mt-2 p-2 rounded-3 small" style="background:var(--fundo)">“@p.Mensagem”</div>
+                            }
+                            <div class="d-flex gap-2 mt-3">
+                                @if (p.Status == StatusEmprestimo.AguardandoAprovacao)
+                                {
+                                    <form asp-controller="Emprestimos" asp-action="Aprovar" asp-route-id="@p.Id" asp-route-voltar="@voltar" method="post">
+                                        <button class="btn btn-laranja btn-sm"><i class="bi bi-check-lg me-1"></i>Aprovar</button>
+                                    </form>
+                                    <form asp-controller="Emprestimos" asp-action="Recusar" asp-route-id="@p.Id" asp-route-voltar="@voltar" method="post" data-confirmar="Recusar o pedido de @p.Solicitante?.Nome?">
+                                        <button class="btn btn-contorno btn-sm">Recusar</button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <form asp-controller="Emprestimos" asp-action="Devolver" asp-route-id="@p.Id" asp-route-voltar="@voltar" method="post" data-confirmar="Confirmar que você recebeu o objeto de volta?">
+                                        <button class="btn btn-marinho btn-sm"><i class="bi bi-box-arrow-in-down me-1"></i>Confirmar devolução</button>
+                                    </form>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else if (Model.MeuPedido is { Status: StatusEmprestimo.AguardandoAprovacao } pedido)
+            {
+                <div class="painel painel-destaque">
+                    <h2 class="h5"><i class="bi bi-hourglass-split text-laranja me-2"></i>Pedido enviado</h2>
+                    <p class="text-suave mb-3">Você pediu este objeto @pedido.DataSolicitacao.Tempo(). Agora é só aguardar a resposta de @o.Dono?.Nome.Split(' ')[0].</p>
+                    <form asp-controller="Emprestimos" asp-action="Cancelar" asp-route-id="@pedido.Id" asp-route-voltar="@voltar" method="post" data-confirmar="Cancelar sua solicitação?">
+                        <button class="btn btn-contorno btn-sm">Cancelar solicitação</button>
+                    </form>
+                </div>
+            }
+            else if (Model.MeuPedido is { Status: StatusEmprestimo.Emprestado } comigo)
+            {
+                <div class="painel painel-destaque">
+                    <h2 class="h5"><i class="bi bi-emoji-smile text-laranja me-2"></i>Está com você!</h2>
+                    <p class="text-suave mb-0">Combine a devolução com @o.Dono?.Nome.Split(' ')[0] até <strong>@comigo.DataPrevistaDevolucao.DataBr()</strong>.</p>
+                </div>
+            }
+            else if (o.Disponivel)
+            {
+                <div class="painel painel-destaque">
+                    <h2 class="h5 mb-3">Solicitar empréstimo</h2>
+                    <form asp-controller="Emprestimos" asp-action="Solicitar" method="post" novalidate>
+                        <input type="hidden" name="ObjetoId" value="@o.Id" />
+                        <div class="mb-3">
+                            <label asp-for="DataPrevistaDevolucao" class="form-label"></label>
+                            <input asp-for="DataPrevistaDevolucao" type="date" class="form-control" min="@hoje" />
+                            <span asp-validation-for="DataPrevistaDevolucao" class="text-danger"></span>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="Mensagem" class="form-label">Mensagem para @o.Dono?.Nome.Split(' ')[0] <span class="text-suave fw-normal">(opcional)</span></label>
+                            <textarea asp-for="Mensagem" class="form-control" rows="3" placeholder="Para que você precisa e como combinam a entrega?"></textarea>
+                            <span asp-validation-for="Mensagem" class="text-danger"></span>
+                        </div>
+                        <button class="btn btn-laranja btn-lg w-100"><i class="bi bi-send me-2"></i>Enviar solicitação</button>
+                    </form>
+                </div>
+            }
+            else
+            {
+                <div class="painel text-center">
+                    <i class="bi bi-clock-history fs-2 text-suave"></i>
+                    <h2 class="h5 mt-2">Indisponível no momento</h2>
+                    <p class="text-suave mb-0">Este objeto está emprestado ou pausado pelo dono. Volte mais tarde!</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

@@ -1,0 +1,126 @@
+﻿@{
+    var controlador = ViewContext.RouteData.Values["controller"]?.ToString();
+    var acao = ViewContext.RouteData.Values["action"]?.ToString();
+    string Ativo(string c, string? a = null) => controlador == c && (a == null || acao == a) ? "active" : "";
+    var logado = User.Identity?.IsAuthenticated == true;
+}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@(ViewData["Title"] is string t ? $"{t} · VAI E VOLTA" : "VAI E VOLTA")</title>
+    <meta name="description" content="Compartilhe o que você tem. Encontre o que precisa. Empréstimo de objetos entre estudantes." />
+    <meta name="theme-color" content="#1b3561" />
+    <link rel="icon" href="~/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="~/lib/jakarta/jakarta.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-vev sticky-top">
+        <div class="container">
+            <a class="logo" asp-controller="Home" asp-action="Index">
+                <span class="logo-icone"><i class="bi bi-arrow-left-right"></i></span>
+                <span>VAI <b>E</b> VOLTA</span>
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#menu" aria-label="Abrir menu">
+                <i class="bi bi-list fs-2 text-primary"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="menu">
+                <ul class="navbar-nav mx-auto gap-lg-1 mt-3 mt-lg-0">
+                    <li class="nav-item"><a class="nav-link @Ativo("Home", "Index")" asp-controller="Home" asp-action="Index"><i class="bi bi-house"></i> Início</a></li>
+                    <li class="nav-item"><a class="nav-link @Ativo("Objetos", "Index")" asp-controller="Objetos" asp-action="Index"><i class="bi bi-grid"></i> Objetos</a></li>
+                    @if (logado)
+                    {
+                        <li class="nav-item"><a class="nav-link @Ativo("Objetos", "Meus")" asp-controller="Objetos" asp-action="Meus"><i class="bi bi-box-seam"></i> Meus objetos</a></li>
+                        <li class="nav-item">
+                            <a class="nav-link @Ativo("Emprestimos")" asp-controller="Emprestimos" asp-action="Index">
+                                <i class="bi bi-arrow-repeat"></i> Empréstimos @await Component.InvokeAsync("Pendentes")
+                            </a>
+                        </li>
+                        @if (User.EhAdmin())
+                        {
+                            <li class="nav-item"><a class="nav-link @Ativo("Admin")" asp-controller="Admin" asp-action="Index"><i class="bi bi-shield-check"></i> Admin</a></li>
+                        }
+                    }
+                </ul>
+                <div class="d-flex align-items-center gap-2 pb-3 pb-lg-0">
+                    @if (logado)
+                    {
+                        <a class="btn btn-laranja btn-sm d-none d-lg-inline-flex" asp-controller="Objetos" asp-action="Criar"><i class="bi bi-plus-lg me-1"></i> Anunciar</a>
+                        <div class="dropdown">
+                            <button class="btn p-0 border-0 d-flex align-items-center gap-2" data-bs-toggle="dropdown" aria-label="Menu da conta">
+                                <span class="avatar">@User.FindFirst("Iniciais")?.Value</span>
+                                <span class="fw-semibold text-primary d-lg-none">@User.Identity!.Name</span>
+                                <i class="bi bi-chevron-down small text-suave"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li class="px-3 py-2">
+                                    <div class="fw-bold text-primary">@User.Identity!.Name</div>
+                                    <div class="small text-suave">@(User.EhAdmin() ? "Administrador" : "Estudante")</div>
+                                </li>
+                                <li><hr class="dropdown-divider" /></li>
+                                <li><a class="dropdown-item" asp-controller="Conta" asp-action="Perfil"><i class="bi bi-person me-2"></i>Meu perfil</a></li>
+                                <li><a class="dropdown-item" asp-controller="Objetos" asp-action="Criar"><i class="bi bi-plus-circle me-2"></i>Anunciar objeto</a></li>
+                                <li>
+                                    <form asp-controller="Conta" asp-action="Sair" method="post">
+                                        <button class="dropdown-item text-danger"><i class="bi bi-box-arrow-right me-2"></i>Sair</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    }
+                    else
+                    {
+                        <a class="btn btn-contorno btn-sm" asp-controller="Conta" asp-action="Entrar">Entrar</a>
+                        <a class="btn btn-marinho btn-sm" asp-controller="Conta" asp-action="Cadastro">Criar conta</a>
+                    }
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        @RenderBody()
+    </main>
+
+    @if (ViewData["SemRodape"] is not true)
+    {
+        <footer class="rodape">
+            <div class="container">
+                <div class="row g-4 align-items-center">
+                    <div class="col-md-6">
+                        <a class="logo claro" asp-controller="Home" asp-action="Index">
+                            <span class="logo-icone"><i class="bi bi-arrow-left-right"></i></span>
+                            <span>VAI <b>E</b> VOLTA</span>
+                        </a>
+                        <p class="mt-3 mb-0">Compartilhe o que você tem. Encontre o que precisa.</p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <a class="me-3" asp-controller="Objetos" asp-action="Index">Objetos</a>
+                        <a href="/health">Status</a>
+                        <p class="mt-3 mb-0 small">Projeto acadêmico · FEMA · @DateTime.Now.Year</p>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    }
+
+    @* Avisos de sucesso/erro depois de cada ação *@
+    @if (TempData["Sucesso"] is string ok)
+    {
+        <div class="aviso" role="status"><i class="bi bi-check-circle-fill"></i><div>@ok</div></div>
+    }
+    @if (TempData["Erro"] is string erro)
+    {
+        <div class="aviso erro" role="alert"><i class="bi bi-exclamation-circle-fill"></i><div>@erro</div></div>
+    }
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
