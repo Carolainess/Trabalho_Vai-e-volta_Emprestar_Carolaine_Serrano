@@ -2,106 +2,177 @@
 
 > **Compartilhe o que você tem. Encontre o que precisa.**
 
-Plataforma web de empréstimo de objetos entre estudantes da faculdade. Quem tem um livro, uma calculadora, um jaleco ou um carregador parado anuncia, e quem precisa pede emprestado por alguns dias.
+O VAI E VOLTA é uma plataforma web para estudantes da faculdade emprestarem objetos uns aos outros. Quem tem um livro, uma calculadora, um jaleco ou um carregador parado em casa anuncia no site. Quem precisa pede emprestado por alguns dias e devolve depois.
 
-Projeto desenvolvido em dupla para a disciplina, usando **ASP.NET Core MVC, Entity Framework Core, PostgreSQL e Docker**.
+Fizemos o projeto em dupla com **ASP.NET Core MVC, Entity Framework Core, PostgreSQL e Docker**. Ele também está pronto para ser publicado na nuvem.
 
 ---
 
-## 1. Objetivo
+## Sumário
 
-Criar uma plataforma simples e bonita onde estudantes possam:
+1. [Por que fizemos](#1-por-que-fizemos)
+2. [O que dá para fazer](#2-o-que-dá-para-fazer)
+3. [Tecnologias](#3-tecnologias)
+4. [Como rodar](#4-como-rodar)
+5. [Contas de demonstração](#5-contas-de-demonstração)
+6. [Arquitetura](#6-arquitetura)
+7. [Banco de dados](#7-banco-de-dados)
+8. [API REST](#8-api-rest)
+9. [Os três conceitos do trabalho](#9-os-três-conceitos-do-trabalho)
+10. [Segurança](#10-segurança)
+11. [Autoras](#11-autoras)
 
-- anunciar objetos que podem emprestar, com foto e descrição;
-- encontrar objetos no catálogo, pesquisando pelo nome ou filtrando por categoria;
-- pedir um objeto emprestado e combinar a data de devolução;
-- aprovar ou recusar os pedidos que recebem;
-- acompanhar quem está com o quê.
+---
 
-## 2. Problema que resolve
+## 1. Por que fizemos
 
-Todo semestre a mesma cena se repete: alguém precisa de uma calculadora científica só para a prova, esqueceu o jaleco no dia da aula de laboratório ou precisa de um livro caro que vai usar por duas semanas. Enquanto isso, outro colega tem exatamente esse objeto parado em casa.
+Todo semestre acontece a mesma coisa. Alguém precisa de uma calculadora científica só para a prova, esquece o jaleco no dia do laboratório ou precisa por duas semanas de um livro caro. E quase sempre um colega tem esse objeto parado em casa.
 
-Hoje isso é resolvido em grupos de WhatsApp: a mensagem se perde, ninguém lembra com quem ficou o livro e não existe controle de devolução. O VAI E VOLTA organiza isso: cada objeto tem dono, status e histórico de empréstimos.
+Hoje isso se resolve no grupo do WhatsApp: a mensagem se perde, ninguém lembra com quem ficou o livro e ninguém controla a devolução. No VAI E VOLTA cada objeto tem dono, situação e histórico de empréstimos.
+
+## 2. O que dá para fazer
+
+- **Criar conta, entrar e sair.** Os formulários são validados e a senha é guardada como hash. O login dura 7 dias.
+- **Anunciar objetos** com foto (JPG, PNG ou WEBP até 5 MB), editar, pausar o anúncio ou excluir.
+- **Procurar no catálogo:** pesquisar pelo nome, filtrar por categoria e mostrar só os disponíveis.
+- **Ver os detalhes** de um objeto: foto, descrição, dono, quantas vezes já foi emprestado e o formulário para pedir.
+- **Pedir emprestado**, com data de devolução e uma mensagem para o dono.
+- **Responder aos pedidos** na tela de Empréstimos, nas abas *Recebidos* e *Meus pedidos*: aprovar, recusar, confirmar a devolução ou cancelar um pedido que ainda não foi respondido.
+- **Ver o perfil**, com os dados da pessoa e um resumo da atividade.
+- **Usar o painel do administrador:** números da plataforma e todos os empréstimos. O administrador pode aprovar pedidos, editar ou excluir qualquer objeto e tornar um usuário administrador (ou desfazer isso).
+- **Encontrar páginas de erro claras** para 404, 403 e 500.
 
 ## 3. Tecnologias
 
-| Camada | Tecnologia |
+| Parte | O que usamos |
 |---|---|
 | Linguagem | C# (.NET 8) |
-| Framework web | ASP.NET Core MVC (Controllers + Views Razor) |
-| API | API REST integrada ao próprio ASP.NET Core (`[ApiController]`) |
-| Banco de dados | PostgreSQL 16 |
-| Acesso a dados | Entity Framework Core 8 + Npgsql (com migrations) |
-| Login | Autenticação por cookie + senha com hash (PasswordHasher) |
-| Interface | HTML5, CSS3, JavaScript, Bootstrap 5.3, Bootstrap Icons, fonte Plus Jakarta Sans |
+| Site | ASP.NET Core MVC com Views Razor |
+| API | Controllers REST (`[ApiController]`) na mesma aplicação |
+| Banco | PostgreSQL 16 |
+| Acesso ao banco | Entity Framework Core 8 + Npgsql, com migrations |
+| Login | Cookie de autenticação + `PasswordHasher` |
+| Interface | HTML, CSS, JavaScript, Bootstrap 5.3, Bootstrap Icons e fonte Plus Jakarta Sans |
 | Contêineres | Docker e Docker Compose |
-| Nuvem | Configuração pronta para Render.com (`render.yaml`) |
+| Nuvem | Render.com (`render.yaml`) |
 
-**Identidade visual:** azul-marinho (`#1b3561`), laranja (`#f37021`) e branco, as mesmas cores do Portal Acadêmico da FEMA. As cores ficam em variáveis no topo do `wwwroot/css/site.css`, então dá para trocar todas de uma vez.
+As cores são o azul-marinho (`#1b3561`), o laranja (`#f37021`) e o branco do Portal Acadêmico da FEMA. Elas ficam em variáveis no topo do `wwwroot/css/site.css`, e é só mudar ali para trocar o site inteiro.
 
-Todas as bibliotecas de interface estão dentro do projeto (`wwwroot/lib`), então o site funciona mesmo sem internet.
+As bibliotecas da interface estão dentro do projeto (`wwwroot/lib`), então o site funciona sem internet.
 
-## 4. Arquitetura
+## 4. Como rodar
 
-Usamos **uma única aplicação ASP.NET Core MVC** (sem microsserviços). Ela atende tanto as páginas do site quanto a API REST, e conversa com o PostgreSQL pelo Entity Framework.
+### Com Docker
 
-```
-            Navegador (site)            Postman / outro app
-                   │                           │
-                   │ páginas HTML              │ JSON
-                   ▼                           ▼
-   ┌───────────────────────────────────────────────────────┐
-   │             Aplicação ASP.NET Core MVC                │
-   │                                                       │
-   │  Controllers (MVC)          Controllers/Api (REST)    │
-   │  Home, Conta, Objetos,      /api/objetos              │
-   │  Emprestimos, Admin         /api/emprestimos          │
-   │          │                         │                  │
-   │          └────────┬────────────────┘                  │
-   │                   ▼                                   │
-   │      Services: EmprestimoService (regras)             │
-   │                FotoService (upload de fotos)          │
-   │                   │                                   │
-   │      Data: AppDbContext (Entity Framework Core)       │
-   └───────────────────┬───────────────────────────────────┘
-                       ▼
-               ┌───────────────┐
-               │  PostgreSQL   │
-               └───────────────┘
+Você precisa do Docker Desktop instalado e aberto.
+
+```bash
+# na pasta onde está o docker-compose.yml
+docker compose up --build
 ```
 
-As regras de empréstimo ficam no `EmprestimoService`, e tanto as telas quanto a API usam ele. Assim a regra é escrita uma vez só: aprovar um pedido pelo site ou pela API tem exatamente o mesmo efeito.
+A primeira vez demora alguns minutos porque o Docker baixa as imagens. Quando aparecer `Banco de dados pronto.` no terminal, abra **http://localhost:8080**.
 
-### Organização das pastas
+Comandos que usamos bastante:
+
+```bash
+docker ps                      # mostra os 2 contêineres rodando
+docker compose logs -f app     # mostra o log da aplicação
+docker compose down            # para tudo
+docker compose down -v         # para e apaga o banco (os dados de exemplo voltam na próxima vez)
+```
+
+### Sem Docker (Visual Studio ou VS Code)
+
+1. Instale o .NET 8 SDK e deixe um PostgreSQL rodando na porta 5432, com usuário e senha `postgres`. Para subir só o banco, use `docker compose up banco`.
+2. Na pasta `VaiEVolta`, rode `dotnet run`.
+3. Abra o endereço que aparecer no terminal.
+
+### Migrations
+
+A migration inicial (`CriacaoInicial`) já está na pasta `Migrations`, e a aplicação aplica ela sozinha quando inicia. Se mudarmos algum Model, criamos uma nova:
+
+```bash
+dotnet tool install --global dotnet-ef     # só na primeira vez
+dotnet ef migrations add NomeDaAlteracao
+```
+
+## 5. Contas de demonstração
+
+Se o banco estiver vazio quando a aplicação iniciar, ela cria 5 usuários, 10 objetos com ilustrações e alguns empréstimos: um emprestado, pedidos aguardando aprovação e dois já devolvidos. Esses dados estão em `Data/SeedData.cs`.
+
+| Perfil | E-mail | Senha |
+|---|---|---|
+| Administrador | admin@vaievolta.com | Admin@123 |
+| Estudante | carol@vaievolta.com | Senha@123 |
+| Estudante | ana@vaievolta.com | Senha@123 |
+| Estudante | lucas@vaievolta.com | Senha@123 |
+| Estudante | bruna@vaievolta.com | Senha@123 |
+
+A tela de login tem botões que preenchem essas contas com um clique.
+
+## 6. Arquitetura
+
+É **uma aplicação só**, sem microsserviços. Ela entrega as páginas do site e a API REST e conversa com o PostgreSQL pelo Entity Framework.
+
+```
+          Navegador (site)            Postman / outro app
+                 │                           │
+                 │ páginas HTML              │ JSON
+                 ▼                           ▼
+ ┌───────────────────────────────────────────────────────┐
+ │             Aplicação ASP.NET Core MVC                │
+ │                                                       │
+ │  Controllers (MVC)          Controllers/Api (REST)    │
+ │  Home, Conta, Objetos,      /api/objetos              │
+ │  Emprestimos, Admin         /api/emprestimos          │
+ │                             /api/auth                 │
+ │          │                         │                  │
+ │          └────────┬────────────────┘                  │
+ │                   ▼                                   │
+ │      Services: EmprestimoService (regras)             │
+ │                FotoService (upload de fotos)          │
+ │                   │                                   │
+ │      Data: AppDbContext (Entity Framework Core)       │
+ └───────────────────┬───────────────────────────────────┘
+                     ▼
+             ┌───────────────┐
+             │  PostgreSQL   │
+             └───────────────┘
+```
+
+As regras de empréstimo ficam todas no `EmprestimoService`, e o site e a API usam o mesmo serviço. Por isso aprovar um pedido pela tela ou pela API faz exatamente a mesma coisa.
+
+### Pastas
 
 ```
 vaievolta/
 ├── Dockerfile                 → imagem da aplicação
 ├── docker-compose.yml         → aplicação + PostgreSQL
-├── render.yaml                → publicação na nuvem (Render)
+├── render.yaml                → publicação no Render
 ├── README.md
-├── ROTEIRO-APRESENTACAO.md
+├── ROTEIRO-APRESENTACAO.md    → roteiro da apresentação
 └── VaiEVolta/
-    ├── Program.cs             → configuração (banco, login, porta da nuvem)
+    ├── Program.cs             → configuração (banco, login, porta, health check)
     ├── Controllers/
     │   ├── HomeController.cs        → página inicial, página da API, erros
     │   ├── ContaController.cs       → cadastro, login, logout, perfil
-    │   ├── ObjetosController.cs     → catálogo, detalhes, cadastrar/editar/excluir
-    │   ├── EmprestimosController.cs → solicitar, aprovar, recusar, devolver
+    │   ├── ObjetosController.cs     → catálogo, detalhes, cadastrar, editar, excluir
+    │   ├── EmprestimosController.cs → pedir, aprovar, recusar, devolver, cancelar
     │   ├── AdminController.cs       → painel do administrador
-    │   └── Api/                     → endpoints REST (JSON)
-    ├── Models/                → Usuario, Objeto, Emprestimo (+ ViewModels e DTOs)
-    ├── Data/                  → AppDbContext, conexão e dados fictícios
+    │   └── Api/                     → endpoints REST
+    ├── Models/                → Usuario, Objeto, Emprestimo, ViewModels e DTOs
+    ├── Data/                  → AppDbContext, conexão com o banco e dados de exemplo
     ├── Migrations/            → criação das tabelas
     ├── Services/              → regras de empréstimo e upload de fotos
+    ├── ViewComponents/        → contador de pedidos pendentes no menu
     ├── Views/                 → telas Razor
-    └── wwwroot/               → CSS, JS, imagens, bibliotecas
+    └── wwwroot/               → CSS, JS, imagens e bibliotecas
 ```
 
-## 5. Banco de dados
+## 7. Banco de dados
 
-São só **três entidades**:
+São três tabelas:
 
 ```
 ┌──────────────────┐        ┌──────────────────────┐        ┌──────────────────────────┐
@@ -119,73 +190,49 @@ São só **três entidades**:
                             └──────────────────────┘        └──────────────────────────┘
 ```
 
-**Relacionamentos**
+- Um **usuário** pode ter vários **objetos** (ele é o dono).
+- Um **objeto** pode ter vários **empréstimos** ao longo do tempo, e isso forma o histórico.
+- Um **usuário** pode fazer vários **pedidos de empréstimo** (ele é o solicitante).
 
-- Um **Usuario** pode ter vários **Objetos** (ele é o dono).
-- Um **Objeto** pode ter vários **Emprestimos** ao longo do tempo (histórico).
-- Um **Usuario** pode fazer vários **Emprestimos** (ele é o solicitante).
-
-**Enumerações**
+**Valores fixos (enums)**
 
 - `Perfil`: Usuario ou Administrador.
 - `Categoria`: Livros, Eletrônicos, Material de estudo, Laboratório, Esporte e lazer, Outros.
 - `StatusEmprestimo`: Aguardando aprovação, Emprestado, Devolvido, Recusado.
 
-**Situação do objeto** (aparece nos cards): **Disponível**, **Aguardando aprovação**, **Emprestado** ou **Devolvido** (no histórico). Ela é calculada a partir dos empréstimos e muda sozinha:
+### Como a situação do objeto muda
 
-| Ação | O que acontece no banco |
+O card de cada objeto mostra uma destas situações: **Disponível**, **Aguardando aprovação**, **Emprestado** ou **Indisponível** (quando o dono pausou o anúncio). Ninguém escolhe a situação. Ela muda com os empréstimos:
+
+| Ação | O que muda no banco |
 |---|---|
-| Alguém solicita | cria um Emprestimo com status *Aguardando aprovação* |
-| Dono aprova | status vira *Emprestado*, o objeto fica `Disponivel = false` e outros pedidos pelo mesmo objeto são recusados |
-| Dono recusa | status vira *Recusado* |
-| Dono confirma devolução | status vira *Devolvido* e o objeto volta a `Disponivel = true` |
+| Alguém pede | cria um empréstimo com status *Aguardando aprovação* |
+| O dono aprova | o status vira *Emprestado*, o objeto fica `Disponivel = false` e os outros pedidos pelo mesmo objeto são recusados sozinhos |
+| O dono recusa | o status vira *Recusado* |
+| Quem pediu cancela | o pedido é apagado (só enquanto ainda não foi respondido) |
+| O dono confirma a devolução | o status vira *Devolvido* e o objeto volta a `Disponivel = true` |
 
-**Migrations e dados fictícios**
+Algumas regras que o sistema confere antes de aceitar um pedido: ninguém pode pedir o próprio objeto, a data de devolução não pode estar no passado e a mesma pessoa não pode ter dois pedidos aguardando para o mesmo objeto.
 
-A migration `CriacaoInicial` cria as tabelas. Quando a aplicação inicia, ela aplica as migrations sozinha (`Database.MigrateAsync()`) e, se o banco estiver vazio, insere 5 usuários, 10 objetos com ilustrações e alguns empréstimos em vários status (`Data/SeedData.cs`).
+## 8. API REST
 
-## 6. Contas de demonstração
+Tudo o que o site faz também funciona pela API, em JSON. A base é `http://localhost:8080`.
 
-| Perfil | E-mail | Senha |
-|---|---|---|
-| Administrador | admin@vaievolta.com | Admin@123 |
-| Estudante | carol@vaievolta.com | Senha@123 |
-| Estudante | ana@vaievolta.com | Senha@123 |
-| Estudante | lucas@vaievolta.com | Senha@123 |
-| Estudante | bruna@vaievolta.com | Senha@123 |
+Os endpoints marcados com 🔒 exigem login. A API usa o mesmo cookie do site. Para testar no Postman, chame primeiro `POST /api/auth/login`. Sem login a API responde **401**, e sem permissão responde **403**, sempre em JSON e nunca redirecionando para a tela de login.
 
-Na tela de login há botões que preenchem essas contas automaticamente.
-
-## 7. Funcionalidades
-
-- **Página inicial:** apresentação, como funciona, números da plataforma e destaques.
-- **Cadastro, login e logout**, com validação dos formulários e senha guardada como hash.
-- **Perfil:** dados da pessoa e resumo (objetos anunciados, empréstimos feitos).
-- **Usuário x administrador:** o administrador tem um painel próprio, vê todos os empréstimos, pode aprovar pedidos, editar ou excluir qualquer objeto e promover usuários.
-- **Objetos:** cadastrar com foto (JPG, PNG ou WEBP até 5 MB), editar, pausar o anúncio e excluir.
-- **Catálogo:** cards com foto, pesquisa por nome, filtro por categoria e chave "Só disponíveis".
-- **Detalhes:** foto grande, descrição, dono, quantas vezes já foi emprestado e o formulário de solicitação.
-- **Empréstimos:** abas "Recebidos" e "Meus pedidos", com aprovar, recusar, confirmar devolução e cancelar pedido.
-- **Proteção das rotas:** páginas de empréstimos e cadastro exigem login; o painel exige perfil de administrador; só o dono (ou o admin) altera um objeto.
-- **Tratamento de erros:** páginas amigáveis para 404, 403 e 500, e mensagens de erro claras nas ações.
-
-## 8. Endpoints REST
-
-Base: `http://localhost:8080`. Todas as respostas são em JSON. Os endpoints com 🔒 exigem login (a API usa o mesmo cookie do site; para testar no Postman, chame primeiro `POST /api/auth/login`).
-
-Também dá para testar tudo pelo próprio site, abrindo o endereço **http://localhost:8080/Home/Api** (a página não aparece no menu, só pelo endereço).
+Também dá para testar pelo próprio site em **http://localhost:8080/Home/Api**. Essa página não aparece no menu, só pelo endereço.
 
 ### Objetos
 
-| Método | Endpoint | Descrição | Respostas |
+| Método | Endpoint | O que faz | Respostas |
 |---|---|---|---|
-| GET | `/api/objetos` | Lista objetos. Filtros: `?busca=`, `?categoria=`, `?disponiveis=true` | 200 |
-| GET | `/api/objetos/{id}` | Busca um objeto | 200, 404 |
+| GET | `/api/objetos` | Lista os objetos. Filtros: `?busca=`, `?categoria=`, `?disponiveis=true` | 200 |
+| GET | `/api/objetos/{id}` | Mostra um objeto | 200, 404 |
 | POST 🔒 | `/api/objetos` | Cadastra um objeto | 201, 400, 401 |
-| PUT 🔒 | `/api/objetos/{id}` | Atualiza (só dono ou admin) | 200, 400, 403, 404 |
-| DELETE 🔒 | `/api/objetos/{id}` | Exclui (só dono ou admin; não exclui se estiver emprestado) | 204, 403, 404, 409 |
+| PUT 🔒 | `/api/objetos/{id}` | Atualiza (só o dono ou o admin) | 200, 400, 403, 404 |
+| DELETE 🔒 | `/api/objetos/{id}` | Exclui (só o dono ou o admin; não exclui se estiver emprestado) | 204, 403, 404, 409 |
 
-Exemplo de corpo para POST/PUT:
+Exemplo de corpo para POST e PUT:
 
 ```json
 {
@@ -198,15 +245,15 @@ Exemplo de corpo para POST/PUT:
 
 ### Empréstimos
 
-| Método | Endpoint | Descrição | Respostas |
+| Método | Endpoint | O que faz | Respostas |
 |---|---|---|---|
-| GET 🔒 | `/api/emprestimos` | Empréstimos em que você participa (admin vê todos). Filtro: `?status=Emprestado` | 200 |
-| GET 🔒 | `/api/emprestimos/{id}` | Busca um empréstimo | 200, 403, 404 |
-| POST 🔒 | `/api/emprestimos` | Solicita um empréstimo | 201, 400 |
+| GET 🔒 | `/api/emprestimos` | Empréstimos em que você participa (o admin vê todos). Filtro: `?status=Emprestado` | 200 |
+| GET 🔒 | `/api/emprestimos/{id}` | Mostra um empréstimo | 200, 403, 404 |
+| POST 🔒 | `/api/emprestimos` | Pede um objeto emprestado | 201, 400 |
 | PUT 🔒 | `/api/emprestimos/{id}/aprovar` | Aprova (dono ou admin) | 200, 400 |
 | PUT 🔒 | `/api/emprestimos/{id}/recusar` | Recusa (dono ou admin) | 200, 400 |
-| PUT 🔒 | `/api/emprestimos/{id}/devolver` | Confirma a devolução | 200, 400 |
-| DELETE 🔒 | `/api/emprestimos/{id}` | Cancela um pedido ainda aguardando (quem pediu) | 204, 400 |
+| PUT 🔒 | `/api/emprestimos/{id}/devolver` | Confirma a devolução (dono ou admin) | 200, 400 |
+| DELETE 🔒 | `/api/emprestimos/{id}` | Cancela um pedido que ainda está aguardando (só quem pediu) | 204, 400 |
 
 ```json
 {
@@ -216,113 +263,77 @@ Exemplo de corpo para POST/PUT:
 }
 ```
 
-### Autenticação
+### Login
 
-| Método | Endpoint | Descrição |
+| Método | Endpoint | O que faz |
 |---|---|---|
-| POST | `/api/auth/login` | `{ "email": "...", "senha": "..." }` devolve o cookie de sessão |
+| POST | `/api/auth/login` | Recebe `{ "email": "...", "senha": "..." }` e devolve o cookie de sessão |
 | POST | `/api/auth/logout` | Encerra a sessão |
 | GET 🔒 | `/api/auth/eu` | Mostra quem está logado |
 
-### Status
+### Health check
 
-`GET /health` responde `Healthy` quando a aplicação e o banco estão no ar (usado pela nuvem).
+`GET /health` responde `Healthy` quando a aplicação está no ar e consegue falar com o banco. A nuvem usa esse endereço.
 
-## 9. Como executar com Docker
+## 9. Os três conceitos do trabalho
 
-**Pré-requisito:** Docker Desktop instalado e aberto.
+### 1. API REST
 
-```bash
-# dentro da pasta vaievolta (onde está o docker-compose.yml)
-docker compose up --build
-```
+**Arquivos:** `Controllers/Api/ObjetosApiController.cs`, `EmprestimosApiController.cs` e `AuthApiController.cs`.
 
-Na primeira vez demora alguns minutos para baixar as imagens. Quando aparecer `Banco de dados pronto.` no terminal, acesse:
-
-**http://localhost:8080**
-
-Comandos úteis:
-
-```bash
-docker ps                          # ver os 2 contêineres rodando
-docker compose logs -f app         # ver o log da aplicação
-docker compose down                # parar
-docker compose down -v             # parar e apagar o banco (volta aos dados fictícios)
-```
-
-### Rodar sem Docker (Visual Studio / VS Code)
-
-1. Tenha o .NET 8 SDK e um PostgreSQL rodando na porta 5432 (usuário e senha `postgres`).
-   Dica: dá para subir só o banco com `docker compose up banco`.
-2. Na pasta `VaiEVolta`: `dotnet run`
-3. Acesse o endereço que aparecer no terminal.
-
-### Migrations
-
-A migration inicial já está na pasta `Migrations`. Se vocês alterarem algum Model, criem uma nova:
-
-```bash
-dotnet tool install --global dotnet-ef        # só na primeira vez
-dotnet ef migrations add NomeDaAlteracao
-```
-
-Se der qualquer problema com a migration inicial, basta apagar a pasta `Migrations` e gerar de novo com `dotnet ef migrations add CriacaoInicial`.
-
-## 10. Os três conceitos acadêmicos
-
-### Conceito 1 — API REST
-
-**Onde está:** `Controllers/Api/ObjetosApiController.cs`, `EmprestimosApiController.cs` e `AuthApiController.cs`.
-
-- Cada recurso tem uma URL (`/api/objetos`, `/api/emprestimos`).
-- O verbo HTTP indica a ação: **GET** consulta, **POST** cria, **PUT** atualiza e **DELETE** remove.
+- Cada recurso tem a sua URL (`/api/objetos`, `/api/emprestimos`).
+- O verbo HTTP diz a ação: **GET** consulta, **POST** cria, **PUT** atualiza e **DELETE** remove.
 - Os dados vão e voltam em **JSON**.
-- Os **códigos de status** dizem o que aconteceu: 200 OK, 201 Created, 204 No Content, 400 dados inválidos, 401 sem login, 403 sem permissão, 404 não encontrado e 409 conflito (por exemplo, excluir um objeto que está emprestado).
-- A API é **stateless**: cada requisição carrega o cookie que identifica quem está chamando.
-- Há uma página escondida do menu (**/Home/Api**) que documenta os endpoints e deixa testar na hora.
+- O **código de status** diz o que aconteceu: 200 OK, 201 Created, 204 No Content, 400 dados inválidos, 401 sem login, 403 sem permissão, 404 não encontrado e 409 conflito (por exemplo, tentar excluir um objeto que está emprestado).
+- A API não guarda estado entre uma chamada e outra. Cada requisição leva o cookie que diz quem está chamando.
 
-### Conceito 2 — Docker
+### 2. Docker
 
-**Onde está:** `Dockerfile`, `docker-compose.yml` e `.dockerignore`.
+**Arquivos:** `Dockerfile`, `docker-compose.yml` e `.dockerignore`.
 
-- O `Dockerfile` tem **duas etapas**: a primeira usa a imagem do SDK para compilar; a segunda usa só o runtime do ASP.NET, deixando a imagem final menor.
+- O `Dockerfile` tem **duas etapas**. A primeira usa a imagem do SDK para compilar. A segunda usa só o runtime do ASP.NET, e por isso a imagem final é menor.
 - O `docker-compose.yml` sobe **dois contêineres**: `app` (o site) e `banco` (PostgreSQL 16).
-- O `healthcheck` faz a aplicação esperar o banco ficar pronto antes de iniciar.
-- Os **volumes** guardam os dados do banco, as fotos enviadas e as chaves do login, então nada se perde quando o contêiner é recriado.
-- A string de conexão é passada por **variável de ambiente** (`ConnectionStrings__Padrao`), sem precisar mudar código.
+- O `healthcheck` do banco faz a aplicação esperar o PostgreSQL ficar pronto antes de subir. Por garantia, a aplicação ainda tenta se conectar até 10 vezes.
+- Os **volumes** guardam os dados do banco, as fotos enviadas e as chaves do login. Nada se perde quando o contêiner é recriado.
+- A conexão com o banco chega por **variável de ambiente** (`ConnectionStrings__Padrao`), sem mudar o código.
 
-### Conceito 3 — Computação em nuvem
+### 3. Computação em nuvem
 
-**Onde está:** `render.yaml`, `Program.cs` e `Data/ConexaoBanco.cs`.
+**Arquivos:** `render.yaml`, `Program.cs` e `Data/ConexaoBanco.cs`.
 
-A aplicação está preparada para ser publicada em um provedor de nuvem (PaaS) como Render, Railway ou Azure App Service:
+A aplicação está preparada para rodar em uma plataforma de nuvem (PaaS) como Render, Railway ou Azure App Service:
 
-- **Configuração por variáveis de ambiente** (princípio do *12-Factor App*): a porta vem de `PORT` e o banco de `DATABASE_URL`, que é o formato que esses serviços fornecem.
-- **Health check** em `/health`: a nuvem consulta esse endereço para saber se o site está saudável e reiniciá-lo se precisar.
-- **Proxy reverso / HTTPS:** a nuvem entrega o site com HTTPS na frente da aplicação. O `UseForwardedHeaders` faz o ASP.NET entender isso.
-- **Banco gerenciado:** em vez de instalar o PostgreSQL, usamos o banco oferecido pelo provedor.
-- **Infraestrutura como código:** o `render.yaml` descreve o site e o banco. O Render lê esse arquivo e cria tudo sozinho.
-- **Migrations automáticas na inicialização**: ao publicar, as tabelas e os dados de demonstração são criados sem nenhum passo manual.
+- **Configuração por variáveis de ambiente.** A porta vem de `PORT` e o banco de `DATABASE_URL`, que é o formato que esses serviços entregam.
+- **Health check em `/health`.** A nuvem acessa esse endereço para saber se o site está funcionando e reinicia o site se precisar.
+- **HTTPS na frente da aplicação.** A nuvem cuida do HTTPS, e o `UseForwardedHeaders` faz o ASP.NET entender isso.
+- **Banco gerenciado.** Usamos o PostgreSQL que o provedor oferece, sem instalar nada.
+- **Infraestrutura como código.** O `render.yaml` descreve o site e o banco, e o Render cria os dois a partir dele.
+- **Migrations na inicialização.** Ao publicar, as tabelas e os dados de exemplo são criados sem nenhum passo manual.
 
-#### Passo a passo para publicar no Render (gratuito)
+#### Publicar no Render (plano gratuito)
 
 1. Suba esta pasta para um repositório no GitHub.
-2. Crie uma conta em [render.com](https://render.com) e entre com o GitHub.
+2. Crie uma conta em [render.com](https://render.com) entrando com o GitHub.
 3. Clique em **New → Blueprint** e escolha o repositório.
-4. O Render lê o `render.yaml`, cria o PostgreSQL e o site e liga os dois.
-5. Aguarde o deploy (alguns minutos). O site fica em `https://vaievolta.onrender.com` (ou nome parecido).
+4. O Render lê o `render.yaml`, cria o PostgreSQL e o site e liga um no outro.
+5. Espere o deploy terminar (alguns minutos). O endereço fica parecido com `https://vaievolta.onrender.com`.
 
-> No plano gratuito o site "dorme" depois de um tempo sem acesso e demora uns 30 segundos para acordar. As fotos enviadas ficam no disco do contêiner e podem sumir quando ele é recriado; os dados do banco continuam salvos. Para a apresentação, o ideal é abrir o site alguns minutos antes.
+> No plano gratuito o site "dorme" depois de um tempo sem acesso e leva uns 30 segundos para acordar, então vale abrir alguns minutos antes da apresentação. As fotos enviadas ficam no disco do contêiner e podem sumir quando ele é recriado. Os dados do banco continuam salvos.
 
-## 11. Segurança (resumo)
+## 10. Segurança
 
-- Senhas guardadas com **hash** (nunca em texto puro).
-- Formulários protegidos contra **CSRF** (token antifalsificação em todos os POST).
+- Senhas guardadas com **hash**, nunca em texto puro.
+- Todos os formulários têm **token antifalsificação** contra CSRF.
 - Rotas protegidas com `[Authorize]` e `[Authorize(Roles = "Administrador")]`.
-- Cada ação confere se a pessoa é dona do objeto antes de alterar.
-- Upload aceita só imagens e no máximo 5 MB; o arquivo recebe um nome aleatório.
-- Redirecionamentos só para endereços do próprio site.
+- Antes de alterar um objeto, o sistema confere se a pessoa é a dona (ou o admin).
+- O upload só aceita imagens de até 5 MB, e cada arquivo é salvo com um nome aleatório.
+- Depois do login, o site só redireciona para endereços dele mesmo.
+
+## 11. Autoras
+
+- Carolaine Silva Serrano — Ciência da Computação, FEMA
+- *[nome da dupla]* — Ciência da Computação, FEMA
 
 ---
 
-Projeto acadêmico · FEMA · 2026
+Projeto acadêmico · FEMA · Assis/SP · 2026
